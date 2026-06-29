@@ -56,3 +56,39 @@ ggplot(samples_100, aes(x = sample_mean, y = id)) +
   theme_minimal()
 ```
 
+```{r}
+#| cache: true
+#| label: biased_working
+set.seed(10)
+
+shaming_weighted <- shaming %>% 
+  mutate(weight = ifelse(age > 40, 3, 1))
+
+biased_samples <- tibble(replicate = 1:1000) %>% 
+  mutate(sample = map(replicate, ~ slice_sample(shaming_weighted, n = 50, weight_by = weight))) %>% 
+  mutate(sample_mean = map_dbl(sample, ~ mean(.x$age, na.rm = TRUE)),
+         sample_se = map_dbl(sample, ~ sd(.x$age, na.rm = TRUE) / sqrt(sum(!is.na(.x$age)))),
+         lower = sample_mean - 1.96 * sample_se,
+         upper = sample_mean + 1.96 * sample_se) %>% 
+  select(-sample)
+```
+
+```{r}
+mean(biased_samples$lower < truth & biased_samples$upper > truth)
+
+ggplot(biased_samples, aes(x = sample_mean)) +
+  geom_density(fill = "lightblue", alpha = 0.5) +
+  geom_vline(xintercept = truth, color = "red", linetype = "dashed") +
+  geom_vline(xintercept = mean(biased_samples$sample_mean), color = "black", linetype = "solid") +
+  labs(
+    title = "Density of Biased Sample Means",
+    subtitle = "The average of the biased sample means (black solid line) is shifted away from the truth (red dashed line)",
+    caption = "Source: primer.data",
+    x = "Sample Mean Age (Years)",
+    y = "Density"
+  ) +
+  theme_minimal()
+```
+
+
+
