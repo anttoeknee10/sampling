@@ -20,6 +20,39 @@ shaming
 
 ```{r}
 #| label: working
-truth <- mean(shaming$age, na.rm = TRUE)
-truth
+#| cache: true
+set.seed(10)
+
+samples <- tibble(replicate = 1:1000) %>% 
+  mutate(sample = map(replicate, ~ slice_sample(shaming, n = 50))) %>% 
+  mutate(sample_mean = map_dbl(sample, ~ mean(.x$age, na.rm = TRUE)),
+         sample_se = map_dbl(sample, ~ sd(.x$age, na.rm = TRUE) / sqrt(sum(!is.na(.x$age)))),
+         lower = sample_mean - 1.96 * sample_se,
+         upper = sample_mean + 1.96 * sample_se) %>% 
+  select(-sample)
 ```
+
+```{r}
+truth <- mean(shaming$age, na.rm = TRUE)
+mean(samples$lower < truth & samples$upper > truth)
+```
+
+```{r}
+samples_100 <- samples %>% 
+  slice_head(n = 100) %>% 
+  mutate(id = row_number())
+
+ggplot(samples_100, aes(x = sample_mean, y = id)) +
+  geom_point() +
+  geom_errorbar(aes(xmin = lower, xmax = upper)) +
+  geom_vline(xintercept = truth, color = "red", linetype = "dashed") +
+  labs(
+    title = "95% Confidence Intervals from 100 Random Samples",
+    subtitle = "Approximately 95% of sample confidence intervals capture the true population mean",
+    caption = "Source: primer.data",
+    x = "Sample Mean Age (Years)",
+    y = "Sample Draw Number"
+  ) +
+  theme_minimal()
+```
+
