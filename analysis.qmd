@@ -1,0 +1,25 @@
+---
+title: "Sampling"
+format: html
+author: Anthony Gao
+execute:
+  echo: false
+---
+
+```{r}
+#| message: false
+#| label: setup
+library(tidyverse)
+library(primer.data)
+```
+
+```{r}
+#| label: tibble
+shaming
+```
+
+```{r}
+#| label: working
+truth <- mean(shaming$age, na.rm = TRUE)
+truth
+```
